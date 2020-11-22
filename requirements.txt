@@ -1,0 +1,4 @@
+pandas~=0.22.0
+PyQt5~=5.12.2
+numpy~=1.14.0
+setuptools~=50.3.2
