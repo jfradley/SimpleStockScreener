@@ -7,15 +7,14 @@ import numpy as np
 def stock_check(ticker, start, end):
 
     try:
-        print(ticker)
         dfx = pdr.get_data_yahoo(ticker, start, end )
         dfx['Frame'] = 'Pass'
     except:
-        print('here')
         data = {'Date': [start], 'Open': [0], 'High':[0], 'Low':[0], 'Close':[0],
                 'Adj Close':[0], 'Volume':[0], 'Frame':['error']}
         dfx = pd.DataFrame(data)
         dfx.set_index('Date', inplace=True)
+
     return dfx
 
 
@@ -37,11 +36,13 @@ def PriceAnalysis(input_list_df, start, end, ticker_list):
 
     for i, df in enumerate(input_list_df):
 
-        if df.iloc[0]['Frame']=='Pass':
+        if df.iloc[0]['Frame'] == 'Pass':
+
             inital = df['Open'][0]
             normalised = df['Close'] / inital
             first = normalised[0]
             last = normalised[-1]
+
             pct = round(((last - first) / first)*100, 3)
             adjusted_pct = round(pct - pct_ftse, 3)
             pct_list.append(pct)
@@ -62,12 +63,13 @@ def PriceAnalysis(input_list_df, start, end, ticker_list):
 
 def VolumeAnalysis(input_list_df, ticker_list):
     volume_df = pd.DataFrame(columns=['Ticker', 'Min.', 'Max.', 'Avg.'])
+
     volume_list = []
     volume_max_list = []
     volume_min_list = []
+
     for i, df in enumerate(input_list_df):
         if df.iloc[0]['Frame'] == 'Pass':
-
             avg = df['Volume'].mean()
             max = df['Volume'].max()
             min = df['Volume'].min()
@@ -88,7 +90,6 @@ def VolumeAnalysis(input_list_df, ticker_list):
 def VolatilityAnalysis(input_list_df, ticker_list):
 
     volatility_df = pd.DataFrame(columns=['Ticker', 'Avg. Pct.', 'Min. Pct.', 'Max. Pct.'])
-
     average = []
     minimum = []
     maximum = []
@@ -102,9 +103,12 @@ def VolatilityAnalysis(input_list_df, ticker_list):
             low = list(df['Low'])
 
             for i1 in range(0, length):
-
-                pctChange = round((((high[i1]-low[i1])/((high[i1]+low[i1])/2))*100),3)
-                tmp_range.append(pctChange)
+                try:
+                    pctChange = round((((high[i1]-low[i1])/((high[i1]+low[i1])/2))*100),3)
+                    tmp_range.append(pctChange)
+                except ZeroDivisionError:
+                    pctChange = 0
+                    tmp_range.append(pctChange)
 
             average.append(np.mean(tmp_range))
             minimum.append(min(tmp_range))

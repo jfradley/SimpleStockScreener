@@ -303,7 +303,7 @@ class FourthWindow(QMainWindow):
         self.tabwidget.setGeometry(350, 50, 350, 600)  # x,y,w,h
         self.tabwidget.addTab(self.tab1, 'Price')
         self.tabwidget.addTab(self.tab2, 'Volume')
-        self.tabwidget.addTab(self.tab3, 'Volatility')
+        self.tabwidget.addTab(self.tab3, 'Daily Price Change')
         self.tabwidget.show()
 
         self.tab1.tw.itemSelectionChanged.connect(lambda: self.tab1.col_select())
@@ -440,13 +440,13 @@ class MyTabWidget(QWidget):
         self.num = 0
 
     def table_set(self,df):
+
         row = df.shape
         rowN = (row[0])
         colN = (row[1])
 
         self.tw.setRowCount(rowN)
         self.tw.setColumnCount(colN)
-
         width = self.tw.size().width()
         self.tw.setColumnWidth(0, width*0.23)
         self.tw.setColumnWidth(1, width*0.23)
@@ -462,7 +462,6 @@ class MyTabWidget(QWidget):
             for i in range(0, colN):
                 cell_val = str(df.iat[i1, i])
                 self.tw.setItem(i1, i, QTableWidgetItem(cell_val))
-
     def col_select(self):
         items = self.tw.selectedIndexes()
         self.num = (items[0].column())
