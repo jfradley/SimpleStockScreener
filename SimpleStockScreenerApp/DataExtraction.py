@@ -43,7 +43,11 @@ def PriceAnalysis(input_list_df, start, end, ticker_list):
             first = normalised[0]
             last = normalised[-1]
 
-            pct = round(((last - first) / first)*100, 3)
+            try:
+                pct = round(((last - first) / first)*100, 3)
+            except ZeroDivisionError:
+                pct = 0
+
             adjusted_pct = round(pct - pct_ftse, 3)
             pct_list.append(pct)
             adjusted_pct_list.append(adjusted_pct)
@@ -57,7 +61,7 @@ def PriceAnalysis(input_list_df, start, end, ticker_list):
     price_df['Last\nprice'] = last_price_list
     price_df['Pct.\nchange'] = pct_list
     price_df['Pct.\nadj.'] = adjusted_pct_list
-    price_df = round(price_df,3)
+    price_df = round(price_df, 3)
     return price_df
 
 
@@ -73,9 +77,9 @@ def VolumeAnalysis(input_list_df, ticker_list):
             avg = df['Volume'].mean()
             max = df['Volume'].max()
             min = df['Volume'].min()
-            volume_list.append(avg)
-            volume_max_list.append(max)
-            volume_min_list.append(min)
+            volume_list.append(avg/1000)  # change volume unit by a 1000
+            volume_max_list.append(max/1000)
+            volume_min_list.append(min/1000)
         else:
             volume_list.append(-100)
             volume_max_list.append(-100)
@@ -85,11 +89,15 @@ def VolumeAnalysis(input_list_df, ticker_list):
     volume_df['Avg.'] = volume_list
     volume_df['Max.'] = volume_max_list
     volume_df['Min.'] = volume_min_list
+    volume_df = round(volume_df, 0)
     return volume_df
 
-def VolatilityAnalysis(input_list_df, ticker_list):
 
-    volatility_df = pd.DataFrame(columns=['Ticker', 'Avg. Pct.', 'Min. Pct.', 'Max. Pct.'])
+def DailyPriceAnalysis(input_list_df, ticker_list):
+
+    volatility_df = pd.DataFrame(columns=['Ticker', 'Avg. Pct.\ndifference',
+                                          'Min. Pct.\ndifference',
+                                          'Max. Pct.\ndifference'])
     average = []
     minimum = []
     maximum = []
@@ -98,7 +106,6 @@ def VolatilityAnalysis(input_list_df, ticker_list):
         if df.iloc[0]['Frame'] == 'Pass':
             tmp_range = []
             length = len(df)
-
             high = list(df['High'])
             low = list(df['Low'])
 
@@ -120,8 +127,8 @@ def VolatilityAnalysis(input_list_df, ticker_list):
             maximum.append(-100)
 
     volatility_df['Ticker'] = ticker_list
-    volatility_df['Avg. Pct.'] = average
-    volatility_df['Min. Pct.'] = minimum
-    volatility_df['Max. Pct.'] = maximum
+    volatility_df['Avg. Pct.\ndifference'] = average
+    volatility_df['Min. Pct.\ndifference'] = minimum
+    volatility_df['Max. Pct.\ndifference'] = maximum
 
     return volatility_df

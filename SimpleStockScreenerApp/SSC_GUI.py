@@ -6,7 +6,8 @@ from PyQt5.QtWidgets import QMainWindow, QPushButton, QApplication, QTableWidget
     QMessageBox, QWidget, QFileDialog
 from PyQt5.QtCore import QDateTime, Qt
 import pandas as pd
-from DataExtraction import stock_check, PriceAnalysis, VolumeAnalysis, VolatilityAnalysis
+from DataExtraction import stock_check, PriceAnalysis, VolumeAnalysis,\
+    DailyPriceAnalysis
 
 # ----------------------------------------------------------------------------
 stylesheet = ("background-color:rgb(134,194,50);"
@@ -29,7 +30,6 @@ stylesheet1 = ("background-color:rgb(134,194,50);"
 class MainWindow(QMainWindow):
 
     def __init__(self):
-
         super(MainWindow, self).__init__()
 
         self.setGeometry(50, 50, 800, 700)  # x, y, w, h
@@ -71,38 +71,36 @@ class MainWindow(QMainWindow):
         #b2.clicked.connect(self.down)
 
     def page2(self):
-        SW2 = SecondWindow()
-        SW2.show()
+        self.SW2 = SecondWindow()
+        self.SW2.show()
         self.hide()
 
     def page3(self):
-        SW3 = ThirdWindow()
-        SW3.show()
+        self.SW3 = ThirdWindow()
+        self.SW3.show()
         self.hide()
 
     def page4(self):
-        SW4 = FourthWindow()
-        SW4.show()
+        self.SW4 = FourthWindow()
+        self.SW4.show()
         self.hide()
 
 
 class SecondWindow(QMainWindow):
     def __init__(self, parent=None):
-
         super(SecondWindow, self).__init__(parent)
 
-        self.setGeometry(50, 50, 800, 700)  # x, y, w, h
+        self.setGeometry(20, 30, 800, 680)  # x, y, w, h
         self.setWindowTitle("Edit")
         scriptDir = os.path.dirname(os.path.realpath(__file__))
-        self.setWindowIcon(QIcon(scriptDir + os.path.sep + 'Drawing1.png'))
+        #self.setWindowIcon(QtGui.QIcon(scriptDir + os.path.sep + 'Drawing1.png'))
         self.setStyleSheet("background-color: rgb(71,75,79)")
 
         label1 = QLabel('UK Market Sectors', self)
-        label1.setFont(QFont("Open Sans Bold",12))
+        label1.setFont(QFont("Open Sans Bold", 12))
         label1.setStyleSheet("color:rgb(255,255,255);")
         label1.resize(285, 30)
         label1.move(20, 5)
-
 
         b1 = QPushButton('Home', self)
         b1.move(50, 100)
@@ -110,11 +108,18 @@ class SecondWindow(QMainWindow):
         b1.setStyleSheet(stylesheet)
         b1.clicked.connect(self.SectorsOverview)
 
-
     def SectorsOverview(self):
         self.SW = MainWindow()
         self.SW.show()
         self.close()
+
+
+
+
+
+
+
+
 
 # ----------------------------------------------------------------------------
 # For UK sectors
@@ -137,13 +142,11 @@ class ThirdWindow(QMainWindow):
         label1.resize(285, 30)
         label1.move(20, 5)
 
-
         b1 = QPushButton('Home', self)
         b1.move(50, 100)
         b1.resize(30, 20)
         b1.setStyleSheet(stylesheet)
         b1.clicked.connect(self.SectorsOverview)
-
 
     def SectorsOverview(self):
         self.SW = MainWindow()
@@ -207,6 +210,13 @@ class FourthWindow(QMainWindow):
         b4.move(710, 380)
         b4.resize(70, 25)
         b4.clicked.connect(self.sort_descending)
+
+        b_save = QPushButton('Save table', self)
+        b_save.setStyleSheet("background-color:rgb(134,194,50);"
+                             "color:rgb(0,0,0);")
+        b_save.move(710, 410)
+        b_save.resize(70, 25)
+        b_save.clicked.connect(self.save_table)
 
         self.cb1 = QCheckBox('Main', self)
         self.cb1.setFont(QFont("Open Sans Bold", 12))
@@ -291,7 +301,7 @@ class FourthWindow(QMainWindow):
         self.end = None
         self.price_df = None
         self.volume_df = None
-        self.volatility_df = None
+        self.dailyprice_df = None
 
         # --------------------------------------------------------------------
         # Tab widget
@@ -301,9 +311,9 @@ class FourthWindow(QMainWindow):
         self.tabwidget = QTabWidget(self)
         self.tabwidget.setStyleSheet("background-color: rgb(255, 255, 255);")
         self.tabwidget.setGeometry(350, 50, 350, 600)  # x,y,w,h
-        self.tabwidget.addTab(self.tab1, 'Price')
+        self.tabwidget.addTab(self.tab1, 'Price change')
         self.tabwidget.addTab(self.tab2, 'Volume')
-        self.tabwidget.addTab(self.tab3, 'Daily Price Change')
+        self.tabwidget.addTab(self.tab3, 'Daily Price difference')
         self.tabwidget.show()
 
         self.tab1.tw.itemSelectionChanged.connect(lambda: self.tab1.col_select())
@@ -311,12 +321,12 @@ class FourthWindow(QMainWindow):
         self.tab3.tw.itemSelectionChanged.connect(lambda: self.tab3.col_select())
         # --------------------------------------------------------------------
 
-        self.labeldyn = QLabel('EMPTY\nselect sector and date', self)
+        self.labeldyn = QLabel('Select sector, dates and market', self)
         self.labeldyn.setAlignment(Qt.AlignCenter)
         self.labeldyn.setStyleSheet("background-color: rgb(255, 255, 255);")
         self.labeldyn.setFont(QFont('Times', 12))
-        self.labeldyn.resize(260, 100)
-        self.labeldyn.move(370, 300)
+        self.labeldyn.resize(340, 100)
+        self.labeldyn.move(355, 100)
 
         # --------------------------------------------------------------------
         msg_btn = QPushButton('Table\n Info', self)
@@ -327,6 +337,15 @@ class FourthWindow(QMainWindow):
         msg_btn.clicked.connect(self.msg)
 
         # --------------------------------------------------------------------
+    def save_table(self):
+
+        tab_index = self.tabwidget.currentIndex()
+        if tab_index == 0 and self.price_df is not None:  # price tab
+            self.tab1.tab_save(self.price_df)
+        if tab_index == 1 and self.volume_df is not None:  # volume tab
+            self.tab2.tab_save(self.volume_df)
+        if tab_index == 2 and self.dailyprice_df is not None:  # volatility tab
+            self.tab3.tab_save(self.dailyprice_df)
 
     def msg(self):
         msg = QMessageBox()
@@ -336,10 +355,10 @@ class FourthWindow(QMainWindow):
                'Avg. Adj. - avergae price with FTSE movement removed\n\n' \
                'Volume Tab:\nMin. - Minimum volume\nMax. - Maximum volume\n' \
                'Avg. - Average volume\n\n' \
-               'Volatility Tab:\n' \
-               'Avg. Pct. - Average daily percentage change\n' \
-               'Min. Pct. - Minimum daily percentage change\n' \
-               'Max. Pct.  - Maximum daily percentage change'
+               'Daily price difference tab:\n' \
+               'Avg. Pct. - Average daily price percentage change\n' \
+               'Min. Pct. - Minimum daily price percentage change\n' \
+               'Max. Pct. - Maximum daily price percentage change'
 
         msg.setText(text)
         msg.setWindowTitle("Table Label Key")
@@ -360,9 +379,9 @@ class FourthWindow(QMainWindow):
         if tab_index == 1 and self.volume_df is not None:  # volume tab
             self.volume_df = self.volume_df.sort_values(self.volume_df.columns[tab_col_no2])
             self.tab2.table_set(self.volume_df)
-        if tab_index == 2 and self.volatility_df is not None:  # volatility tab
-            self.volatility_df = self.volatility_df.sort_values(self.volatility_df.columns[tab_col_no3])
-            self.tab3.table_set(self.volatility_df)
+        if tab_index == 2 and self.dailyprice_df is not None:  # volatility tab
+            self.dailyprice_df = self.dailyprice_df.sort_values(self.dailyprice_df.columns[tab_col_no3])
+            self.tab3.table_set(self.dailyprice_df)
 
     def sort_descending(self):
         tab_index = self.tabwidget.currentIndex()
@@ -376,9 +395,9 @@ class FourthWindow(QMainWindow):
         if tab_index == 1 and self.volume_df is not None:  # volume tab
             self.volume_df = self.volume_df.sort_values(self.volume_df.columns[tab_col_no2], ascending=False)
             self.tab2.table_set(self.volume_df)
-        if tab_index == 2 and self.volatility_df is not None:  # volatility tab
-            self.volatility_df = self.volatility_df.sort_values(self.volatility_df.columns[tab_col_no3], ascending=False)
-            self.tab3.table_set(self.volatility_df)
+        if tab_index == 2 and self.dailyprice_df is not None:  # volatility tab
+            self.dailyprice_df = self.dailyprice_df.sort_values(self.dailyprice_df.columns[tab_col_no3], ascending=False)
+            self.tab3.table_set(self.dailyprice_df)
 
     def home(self):
         self.SW = MainWindow()
@@ -402,6 +421,7 @@ class FourthWindow(QMainWindow):
         self.label_lw2.setText('Selected = ' + (self.lw.currentItem().text()))
 
     def stock(self):
+
         df_list = []
         tick_list = []
         sheet = 'sector' + self.lw.currentItem().text()
@@ -423,11 +443,11 @@ class FourthWindow(QMainWindow):
 
         self.price_df = PriceAnalysis(df_list, self.start, self.end, tick_list)
         self.volume_df = VolumeAnalysis(df_list, tick_list)
-        self.volatility_df = VolatilityAnalysis(df_list, tick_list)
+        self.dailyprice_df = DailyPriceAnalysis(df_list, tick_list)
 
         self.tab1.table_set(self.price_df)
         self.tab2.table_set(self.volume_df)
-        self.tab3.table_set(self.volatility_df)
+        self.tab3.table_set(self.dailyprice_df)
 
 
 class MyTabWidget(QWidget):
@@ -465,6 +485,10 @@ class MyTabWidget(QWidget):
     def col_select(self):
         items = self.tw.selectedIndexes()
         self.num = (items[0].column())
+
+    def tab_save(self, df):
+        path = 'testsave.xlsx'
+        df.to_excel(path)
 
 # ----------------------------------------------------------------------------
 # MAIN
