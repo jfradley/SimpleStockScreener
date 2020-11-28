@@ -11,7 +11,7 @@ def stock_check(ticker, start, end):
         dfx['Frame'] = 'Pass'
     except:
         data = {'Date': [start], 'Open': [0], 'High':[0], 'Low':[0], 'Close':[0],
-                'Adj Close':[0], 'Volume':[0], 'Frame':['error']}
+                'Adj Close':[0], 'Volume':[0], 'Frame':['Error']}
         dfx = pd.DataFrame(data)
         dfx.set_index('Date', inplace=True)
 
@@ -28,16 +28,15 @@ def PriceAnalysis(input_list_df, start, end, ticker_list):
 
     df_ftse = pdr.get_data_yahoo('^FTSE', start, end)  # FTSE
     inital_ftse = df_ftse['Close'][0]
-
     normalised_ftse = df_ftse['Close'] / inital_ftse
 
     first_ftse = normalised_ftse[0]
     last_ftse = normalised_ftse[-1]
     pct_ftse = round(((last_ftse - first_ftse) / first_ftse)*100, 3)
-
+    print('a')
     for i, df in enumerate(input_list_df):
         if df.iloc[0]['Frame'] == 'Pass':
-
+            print('b')
             inital = df['Open'][0]
             normalised = df['Close'] / inital
             first = normalised[0]
@@ -132,3 +131,21 @@ def DailyPriceAnalysis(input_list_df, ticker_list):
     volatility_df['Max. Pct.\ndifference'] = maximum
 
     return volatility_df
+
+
+def errorRemove(input_list_df,tick_list):
+    error_df = pd.DataFrame(columns=['Ticker'])
+    error_list = []
+    update_list_df = []
+    update_tick_list = []
+    for i, df in enumerate(input_list_df):
+        if df.iloc[0]['Frame'] == 'Error':
+            error_list.append(tick_list[i])
+        else:
+            print('gher')
+            update_list_df.append(df)
+            update_tick_list.append(tick_list[i])
+
+    print(update_list_df)
+    error_df['Ticker'] = error_list
+    return update_list_df, error_df, update_tick_list

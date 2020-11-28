@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QMainWindow, QPushButton, QApplication, QTableWidget
 from PyQt5.QtCore import QDateTime, Qt
 import pandas as pd
 from DataExtraction import stock_check, PriceAnalysis, VolumeAnalysis,\
-    DailyPriceAnalysis
+    DailyPriceAnalysis, errorRemove
 
 # ----------------------------------------------------------------------------
 stylesheet = ("background-color:rgb(134,194,50);"
@@ -159,6 +159,10 @@ class ThirdWindow(QMainWindow):
         b1.setToolTip('Back to home page')
         b1.clicked.connect(self.home)
 
+        self.datepicker = dateWidget(parent=self)
+        self.datepicker.show()
+        self.datepicker.d1.dateChanged.connect(self.datepicker.date_change)
+        self.datepicker.d2.dateChanged.connect(self.datepicker.date_change)
 
     def home(self):
         self.SW = MainWindow()
@@ -180,7 +184,6 @@ class FourthWindow(QMainWindow):
         self.setStyleSheet("background-color: rgb(71,75,79)")
 
         self.sheet_names = None
-
 
         label1 = QLabel('UK Individual Sector Components', self)
         label1.setFont(QFont("Open Sans Bold",12))
@@ -266,8 +269,10 @@ class FourthWindow(QMainWindow):
         self.label_lw2.resize(160, 25)
         self.label_lw2.move(140, 300)
 
-        self.file_name = None
+        # --------------------------------------------------------------------
+        # Sector loader
 
+        self.file_name = None
         parent_fldr = (os.path.dirname(os.getcwd()))
         self.file_name = parent_fldr + "/Data/SectorsExample.xlsx"
 
@@ -290,18 +295,21 @@ class FourthWindow(QMainWindow):
         self.price_df = None
         self.volume_df = None
         self.dailyprice_df = None
+        self.error_df = None
 
         # --------------------------------------------------------------------
         # Tab widget
         self.tab1 = MyTabWidget(self)
         self.tab2 = MyTabWidget(self)
         self.tab3 = MyTabWidget(self)
+        self.tab4 = MyTabWidget(self)
         self.tabwidget = QTabWidget(self)
         self.tabwidget.setStyleSheet("background-color: rgb(255, 255, 255);")
-        self.tabwidget.setGeometry(350, 50, 350, 600)  # x,y,w,h
+        self.tabwidget.setGeometry(340, 50, 360, 600)  # x,y,w,h
         self.tabwidget.addTab(self.tab1, 'Price change')
         self.tabwidget.addTab(self.tab2, 'Volume')
         self.tabwidget.addTab(self.tab3, 'Daily Price difference')
+        self.tabwidget.addTab(self.tab4, 'Error Frames')
         self.tabwidget.show()
 
         self.tab1.tw.itemSelectionChanged.connect(lambda: self.tab1.col_select())
@@ -427,13 +435,17 @@ class FourthWindow(QMainWindow):
             df_list.append(result_df)
         self.labeldyn.setHidden(True)
 
+        df_list, self.error_df, tick_list = errorRemove(df_list, tick_list)
+
         self.price_df = PriceAnalysis(df_list, start, end, tick_list)
         self.volume_df = VolumeAnalysis(df_list, tick_list)
         self.dailyprice_df = DailyPriceAnalysis(df_list, tick_list)
 
+
         self.tab1.table_set(self.price_df)
         self.tab2.table_set(self.volume_df)
         self.tab3.table_set(self.dailyprice_df)
+        self.tab4.table_set(self.error_df)
 
 
 # ----------------------------------------------------------------------------
@@ -446,7 +458,7 @@ class MyTabWidget(QWidget):
         super(MyTabWidget, self).__init__(parent=None)
 
         self.tw = QTableWidget(self)
-        self.tw.resize(350, 600)
+        self.tw.resize(360, 600)
         self.num = 0
 
     def table_set(self,df):
