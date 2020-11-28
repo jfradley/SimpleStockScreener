@@ -3,7 +3,7 @@ import sys
 from PyQt5.QtGui import QFont, QIcon
 from PyQt5.QtWidgets import QMainWindow, QPushButton, QApplication, QTableWidget,\
     QTableWidgetItem, QDateEdit, QLabel, QListWidget, QCheckBox, QTabWidget, \
-    QMessageBox, QWidget, QFileDialog
+    QMessageBox, QWidget, QFileDialog, QHBoxLayout
 from PyQt5.QtCore import QDateTime, Qt
 import pandas as pd
 from DataExtraction import stock_check, PriceAnalysis, VolumeAnalysis,\
@@ -103,12 +103,21 @@ class SecondWindow(QMainWindow):
         label1.move(20, 5)
 
         b1 = QPushButton('Home', self)
-        b1.move(50, 100)
-        b1.resize(30, 20)
-        b1.setStyleSheet(stylesheet)
-        b1.clicked.connect(self.SectorsOverview)
+        b1.setFont(QFont("Open Sans Bold", 12))
+        b1.setStyleSheet(stylesheet1)
+        b1.move(720, 620)
+        b1.resize(55, 55)
+        b1.setToolTip('Back to home page')
+        b1.clicked.connect(self.home)
 
-    def SectorsOverview(self):
+        self.datepicker = dateWidget(parent=self)
+        self.datepicker.show()
+        self.datepicker.d1.dateChanged.connect(self.datepicker.date_change)
+        self.datepicker.d2.dateChanged.connect(self.datepicker.date_change)
+
+
+    def home(self):
+
         self.SW = MainWindow()
         self.SW.show()
         self.close()
@@ -143,12 +152,15 @@ class ThirdWindow(QMainWindow):
         label1.move(20, 5)
 
         b1 = QPushButton('Home', self)
-        b1.move(50, 100)
-        b1.resize(30, 20)
-        b1.setStyleSheet(stylesheet)
-        b1.clicked.connect(self.SectorsOverview)
+        b1.setFont(QFont("Open Sans Bold", 12))
+        b1.setStyleSheet(stylesheet1)
+        b1.move(720, 620)
+        b1.resize(55, 55)
+        b1.setToolTip('Back to home page')
+        b1.clicked.connect(self.home)
 
-    def SectorsOverview(self):
+
+    def home(self):
         self.SW = MainWindow()
         self.SW.show()
         self.close()
@@ -268,37 +280,13 @@ class FourthWindow(QMainWindow):
 
         # --------------------------------------------------------------------
         # Date picker
-        label_from = QLabel('From', self)
-        label_from.setAlignment(Qt.AlignCenter)
-        label_from.setFont(QFont("Open Sans Bold",12))
-        label_from.setStyleSheet("background-color: rgb(134,194,50);"
-                                 "color: rgb(255,255,255);")
-        label_from.resize(100, 20)
-        label_from.move(20, 60)
+        self.datepicker = dateWidget(parent=self)
+        self.datepicker.show()
+        self.datepicker.d1.dateChanged.connect(self.datepicker.date_change)
+        self.datepicker.d2.dateChanged.connect(self.datepicker.date_change)
 
-        self.d1 = QDateEdit(self, calendarPopup=True)
-        self.d1.setDateTime(QDateTime.currentDateTime())
-        self.d1.setStyleSheet("background-color: rgb(255, 255, 255);")
-        self.d1.setGeometry(20, 80, 100, 25)
-        self.d1.dateChanged.connect(self.date_change)
-
-        label_to = QLabel('To', self)
-        label_to.setAlignment(Qt.AlignCenter)
-        label_to.setFont(QFont("Open Sans Bold",12))
-        label_to.setStyleSheet("background-color: rgb(134,194,50);"
-                               "color: rgb(255,255,255);")
-        label_to.resize(100, 20)
-        label_to.move(140, 60)
-
-        self.d2 = QDateEdit(self, calendarPopup=True)
-        self.d2.setDateTime(QDateTime.currentDateTime())
-        self.d2.setStyleSheet("background-color: rgb(255, 255, 255);")
-        self.d2.setGeometry(140, 80, 100, 25)
-        self.d2.dateChanged.connect(self.date_change)
         # --------------------------------------------------------------------
 
-        self.start = None
-        self.end = None
         self.price_df = None
         self.volume_df = None
         self.dailyprice_df = None
@@ -404,9 +392,6 @@ class FourthWindow(QMainWindow):
         self.SW.show()
         self.close()
 
-    def date_change(self):
-        self.start = self.d1.dateTime().toString('yyyy-MM-dd')
-        self.end = self.d2.dateTime().toString('yyyy-MM-dd')
 
     # file picker and get sheet names
     def file_select(self):
@@ -433,15 +418,16 @@ class FourthWindow(QMainWindow):
                 tick_list.append(df.at[i,'Code'])
             if self.cb2.isChecked() and market_type == 'Aim':
                 tick_list.append(df.at[i, 'Code'])
+        start = self.datepicker.start
+        end = self.datepicker.end
 
         for tick in tick_list:
             ticker = tick + '.L'
-            print(ticker)
-            result_df = stock_check(ticker, self.start, self.end)
+            result_df = stock_check(ticker, start, end)
             df_list.append(result_df)
         self.labeldyn.setHidden(True)
 
-        self.price_df = PriceAnalysis(df_list, self.start, self.end, tick_list)
+        self.price_df = PriceAnalysis(df_list, start, end, tick_list)
         self.volume_df = VolumeAnalysis(df_list, tick_list)
         self.dailyprice_df = DailyPriceAnalysis(df_list, tick_list)
 
@@ -450,10 +436,14 @@ class FourthWindow(QMainWindow):
         self.tab3.table_set(self.dailyprice_df)
 
 
+# ----------------------------------------------------------------------------
+# Tab widget
+
+
 class MyTabWidget(QWidget):
 
     def __init__(self, parent):
-        super(MyTabWidget, self).__init__(parent)
+        super(MyTabWidget, self).__init__(parent=None)
 
         self.tw = QTableWidget(self)
         self.tw.resize(350, 600)
@@ -489,6 +479,53 @@ class MyTabWidget(QWidget):
     def tab_save(self, df):
         path = 'testsave.xlsx'
         df.to_excel(path)
+
+# ----------------------------------------------------------------------------
+# date widget
+
+
+class dateWidget(QWidget):
+
+    def __init__(self, parent):
+        super(dateWidget, self).__init__(parent=parent)
+        self.start = 0
+        self.end = 0
+        # --------------------------------------------------------------------
+        # Date picker
+        self.label_from = QLabel('From',parent)
+        self.label_from.setAlignment(Qt.AlignCenter)
+        self.label_from.setFont(QFont("Open Sans Bold", 12))
+        self.label_from.setStyleSheet("background-color: rgb(134,194,50);"
+                                 "color: rgb(255,255,255);")
+        self.label_from.resize(100, 20)
+        self.label_from.move(20, 60)
+
+        self.d1 = QDateEdit(parent, calendarPopup=True)
+        self.d1.setDateTime(QDateTime.currentDateTime())
+        self.d1.setStyleSheet("background-color: rgb(255, 255, 255);")
+        self.d1.setGeometry(20, 80, 100, 25)
+        #self.d1.dateChanged.connect(self.date_change)
+
+        label_to = QLabel('To', parent)
+        label_to.setAlignment(Qt.AlignCenter)
+        label_to.setFont(QFont("Open Sans Bold",12))
+        label_to.setStyleSheet("background-color: rgb(134,194,50);"
+                               "color: rgb(255,255,255);")
+        label_to.resize(100, 20)
+        label_to.move(140, 60)
+
+        self.d2 = QDateEdit(parent, calendarPopup=True)
+        self.d2.setDateTime(QDateTime.currentDateTime())
+        self.d2.setStyleSheet("background-color: rgb(255, 255, 255);")
+        self.d2.setGeometry(140, 80, 100, 25)
+
+    def date_change(self):
+
+        self.start = self.d1.dateTime().toString('yyyy-MM-dd')
+        self.end = self.d2.dateTime().toString('yyyy-MM-dd')
+
+        # --------------------------------------------------------------------
+
 
 # ----------------------------------------------------------------------------
 # MAIN

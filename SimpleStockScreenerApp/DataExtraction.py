@@ -19,6 +19,7 @@ def stock_check(ticker, start, end):
 
 
 def PriceAnalysis(input_list_df, start, end, ticker_list):
+
     price_df = pd.DataFrame(columns=['Ticker', 'Last\nprice', 'Pct.\nchange', 'Pct.\nadj.'])
 
     pct_list = []
@@ -35,7 +36,6 @@ def PriceAnalysis(input_list_df, start, end, ticker_list):
     pct_ftse = round(((last_ftse - first_ftse) / first_ftse)*100, 3)
 
     for i, df in enumerate(input_list_df):
-
         if df.iloc[0]['Frame'] == 'Pass':
 
             inital = df['Open'][0]
