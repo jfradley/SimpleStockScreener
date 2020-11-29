@@ -14,7 +14,7 @@ def stock_check(ticker, start, end):
                 'Adj Close':[0], 'Volume':[0], 'Frame':['Error']}
         dfx = pd.DataFrame(data)
         dfx.set_index('Date', inplace=True)
-
+    print(dfx)
     return dfx
 
 
@@ -33,10 +33,10 @@ def PriceAnalysis(input_list_df, start, end, ticker_list):
     first_ftse = normalised_ftse[0]
     last_ftse = normalised_ftse[-1]
     pct_ftse = round(((last_ftse - first_ftse) / first_ftse)*100, 3)
-    print('a')
+
     for i, df in enumerate(input_list_df):
         if df.iloc[0]['Frame'] == 'Pass':
-            print('b')
+
             inital = df['Open'][0]
             normalised = df['Close'] / inital
             first = normalised[0]
@@ -142,10 +142,52 @@ def errorRemove(input_list_df,tick_list):
         if df.iloc[0]['Frame'] == 'Error':
             error_list.append(tick_list[i])
         else:
-            print('gher')
+
             update_list_df.append(df)
             update_tick_list.append(tick_list[i])
 
     print(update_list_df)
     error_df['Ticker'] = error_list
     return update_list_df, error_df, update_tick_list
+
+
+def PriceAnalysis1(input_list_df, ticker_list, area_list):
+
+    price_df = pd.DataFrame(columns=['Ticker', 'Last\nprice', 'Pct.\nchange'])
+
+    pct_list = []
+    last_price_list = []
+    europe_list = []
+
+    for i, df in enumerate(input_list_df):
+        if df.iloc[0]['Frame'] == 'Pass':
+
+            inital = df['Open'][0]
+            normalised = df['Close'] / inital
+            first = normalised[0]
+            last = normalised[-1]
+
+            try:
+                pct = round(((last - first) / first)*100, 3)
+            except ZeroDivisionError:
+                pct = 0
+
+            pct_list.append(pct)
+            last_price_list.append(df['Close'][-1])
+            print('c')
+            if area_list[i] == 'Europe':
+                europe_list.append(pct)
+        else:
+            pct_list.append(-100)
+            last_price_list.append(-100)
+
+    europe_ave = np.mean(europe_list)
+    ticker_list.append('Europe')
+    last_price_list.append(-100)
+    pct_list.append(europe_ave)
+
+    price_df['Ticker'] = ticker_list
+    price_df['Last\nprice'] = last_price_list
+    price_df['Pct.\nchange'] = pct_list
+    price_df = round(price_df, 3)
+    return price_df

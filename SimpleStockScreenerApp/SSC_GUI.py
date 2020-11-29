@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import QMainWindow, QPushButton, QApplication, QTableWidget
 from PyQt5.QtCore import QDateTime, Qt
 import pandas as pd
 from DataExtraction import stock_check, PriceAnalysis, VolumeAnalysis,\
-    DailyPriceAnalysis, errorRemove
+    DailyPriceAnalysis, errorRemove, PriceAnalysis1
 
 # ----------------------------------------------------------------------------
 stylesheet = ("background-color:rgb(134,194,50);"
@@ -96,7 +96,7 @@ class SecondWindow(QMainWindow):
         #self.setWindowIcon(QtGui.QIcon(scriptDir + os.path.sep + 'Drawing1.png'))
         self.setStyleSheet("background-color: rgb(71,75,79)")
 
-        label1 = QLabel('UK Market Sectors', self)
+        label1 = QLabel('World Market Sectors', self)
         label1.setFont(QFont("Open Sans Bold", 12))
         label1.setStyleSheet("color:rgb(255,255,255);")
         label1.resize(285, 30)
@@ -110,10 +110,66 @@ class SecondWindow(QMainWindow):
         b1.setToolTip('Back to home page')
         b1.clicked.connect(self.home)
 
+        b2 = QPushButton('Run Analysis...', self)
+        b2.setFont(QFont("Open Sans Bold", 12))
+        b2.setStyleSheet("background-color:rgb(134,194,50);"
+                             "color:rgb(0,0,0);")
+        b2.move(140, 330)
+        b2.resize(160, 25)
+        b2.clicked.connect(self.stock)
+
         self.datepicker = dateWidget(parent=self)
         self.datepicker.show()
         self.datepicker.d1.dateChanged.connect(self.datepicker.date_change)
         self.datepicker.d2.dateChanged.connect(self.datepicker.date_change)
+
+        # --------------------------------------------------------------------
+        # Tab widget
+        self.tab1 = MyTabWidget(self)
+        self.tabwidget = QTabWidget(self)
+        self.tabwidget.setStyleSheet("background-color: rgb(255, 255, 255);")
+        self.tabwidget.setGeometry(340, 50, 360, 600)  # x,y,w,h
+        self.tabwidget.addTab(self.tab1, 'Price change')
+        self.tabwidget.show()
+
+        self.tab1.tw.itemSelectionChanged.connect(lambda: self.tab1.col_select())
+
+        # --------------------------------------------------------------------
+
+        # --------------------------------------------------------------------
+        # Sector loader
+
+        self.file_name = None
+        parent_fldr = (os.path.dirname(os.getcwd()))
+        self.file_name = parent_fldr + "/Data/SectorsExample.xlsx"
+
+        with pd.ExcelFile(self.file_name) as file:
+            self.sheet_names = file.sheet_names
+
+            #for i, sheet in enumerate(self.sheet_names):
+                #if sheet[:6] == 'sector':
+                    #self.lw.insertItem(i, sheet[6:])
+
+    def stock(self):
+        df_list = []
+        #tick_list = []
+
+        df = pd.read_excel(self.file_name, sheet_name='World', usecols="A:E")
+        tick_list = list(df['Code'])
+        print('h')
+        print(df)
+        area_list = list(df['Area'])
+        print('a')
+
+        start = self.datepicker.start
+        end = self.datepicker.end
+
+        for tick in tick_list:
+            result_df = stock_check(tick, start, end)
+            df_list.append(result_df)
+
+        self.price_df = PriceAnalysis1(df_list, tick_list, area_list)
+        self.tab1.table_set(self.price_df)
 
 
     def home(self):
@@ -440,7 +496,6 @@ class FourthWindow(QMainWindow):
         self.price_df = PriceAnalysis(df_list, start, end, tick_list)
         self.volume_df = VolumeAnalysis(df_list, tick_list)
         self.dailyprice_df = DailyPriceAnalysis(df_list, tick_list)
-
 
         self.tab1.table_set(self.price_df)
         self.tab2.table_set(self.volume_df)
